@@ -5,7 +5,7 @@ library(GA)
 library(foreach)
 
 ####################### variables - remove unnecessary ones
-max_loop<-10 # cv no
+max_loop<-1 # cv no
 max_supra_loop<-1
 
 ## Optimization parameters
@@ -25,6 +25,12 @@ max_iter_rgenoud<-500
 max_iter_gensa<-5000
 maxit_NM<-500000
 maxit_nloptr<-10000
+
+####################### file names
+
+fileName<-"equationList.txt"
+inputTrain<-"inputTrain.txt"
+inputTest<-"inputTest.txt"
 
 ####################### functions 
 
@@ -68,9 +74,13 @@ tRes1<-function(matrix, parameters, equat) {
   return (res)
 }
 
+##Optimize functions
+RMSE<-cmpfun(RMSE1)
+funct<-cmpfun(funct1)
+tRes<-cmpfun(tRes1)
+
 ####################### reading equations
 
-fileName<-"equationList.txt"
 con<-file(fileName, open = "r")
 equationsRaw<-readLines(con)
 close(con)
@@ -78,9 +88,15 @@ close(con)
 ####################### preprocessing
 
 
-equationBuf<-gsub(" ", "", equationsRaw)
+equationBuf<-gsub(" ", "", equationsRaw[2])
 equation<-gsub("ln", "log", equationBuf)
+print("Equation:")
+print(equation)
+
 N_params<-str_count(equation, "C")
+cat("Amount of parameters : ", N_params, "\n")
+print("Amount of parameters : ")
+print(N_params)
 
 ## Prepare parameters and variables
 RMSE_val<-vector(length = max_loop)
@@ -91,4 +107,35 @@ best_RMSE_val<-vector(length = max_loop)
 best_RMSE_ind<-vector(length = max_loop)
 best_RMSE_total<-1000000000000
 
-print("Works")
+
+####################### reading inputs
+
+trainMatrix<-read.csv(inputTrain,header = FALSE,sep = "\t", colClasses = "numeric")
+testMatrix<-read.csv(inputTest,header = FALSE,sep = "\t", colClasses = "numeric")
+
+for(i in 1:(dim(trainMatrix)[2]-1)) {
+  assign(paste("In", i, sep=""), as.double(trainMatrix[,i]))
+  out<-as.double(trainMatrix[,dim(trainMatrix)[2]])
+}
+
+population<-1000
+prmsList<-matrix(data = NA, nrow = population, ncol = N_params)
+
+for(i in 1:population) {
+  prmsList[i,]<-rnorm(N_params)/10
+}
+
+fitness<-function(prms) {
+  return (funct(prms, equation))
+}
+
+populationFunction<-function() {
+  return (prmsList)
+}
+
+#initialFit<-funct(params, equation) #fitness?                     
+#cat("Initial fitness = ",initialFit,"\n")
+
+GA<-ga(fitness = fitness, popSize = population, type = "real-valued", min = c(-1, -1), max = c(1, 1))
+summary(GA)
+
