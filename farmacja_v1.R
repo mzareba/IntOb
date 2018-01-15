@@ -8,6 +8,9 @@ library(foreach)
 max_loop <- 1 # Define how many sets use to learn, max 10.
 max_supra_loop <- 1
 
+ENERGY <- 50
+ENERGY_EXCHANGE <- 5
+
 ## Optimization parameters
 maxit_SANN <- 100
 maxit_optimx <- 5000
@@ -131,6 +134,36 @@ tRes1 <- function(matrix, parameters, equat) {
   try (res <- cbind(observed, predicted), TRUE)
   colnames(res) <- c("Observed", "Predicted")
   return (res)
+}
+
+MEETING <- function(population, n_params) {
+  i<-1
+  while (nrow(population)>2 & i<=nrow(population)) {
+    indexes <- sample(nrow(population),2)
+    if (population[indexes[1], n_params+2] < population[indexes[2], n_params+2]) {
+      population[indexes[1], n_params+1] = population[indexes[1], n_params+1] + ENERGY_EXCHANGE
+      population[indexes[2], n_params+1] = population[indexes[2], n_params+1] - ENERGY_EXCHANGE
+      if (population[indexes[2], n_params+1] <= 0) {
+        population <- population[-i,]
+      }
+    } else if (population[indexes[1], n_params+2] > population[indexes[2], n_params+2]) {
+      population[indexes[2], n_params+1] = population[indexes[2], n_params+1] + ENERGY_EXCHANGE
+      population[indexes[1], n_params+1] = population[indexes[1], n_params+1] - ENERGY_EXCHANGE
+      if (population[indexes[1], n_params+1] <= 0) {
+        population <- population[-i,]
+      }
+    }
+    i <- i+1
+  }
+  return(population)
+}
+
+BREEDING <- function(population, n_params) {
+  return(population)
+}
+
+ELIMINATION <- function(population, n_params) {
+  return(population)
 }
 
 ##Optimize functions
@@ -269,30 +302,30 @@ for (lk_supra_loop in 1: max_supra_loop) {
       for_domain[i,1]<--100*max(abs(paramFunct))
       for_domain[i,2]<-100*max(abs(paramFunct))
     }
-    ########################################
-    if (use_GA){
-
-    require(GA)
-
-    print("Running GA")
-      fit0 <- ga( suggestions = paramFunct,
-                  fitness     = function(x) funct(x, equation),
-                  type        = "real-valued",
-                  maxiter     = maxit_ga,
-                  maxFitness  = maxFitnessToStopGA,
-                  selection   = SELECTION,
-                  crossover   = CROSSOVER,
-                  mutation    = MUTATION,
-                  min         = for_domain[,1],
-                  max         = for_domain[,2]
-      )
-      
-      paramFunct<-fit0@solution
-
-      print("FINAL RESULTS GA")
-      print(paramFunct)
-
+    
+    N_ROWS <- 50
+    
+    initialPopulation <- matrix(nrow = N_ROWS, ncol = N_params + 2)
+    
+    for (i in 1:N_ROWS) {
+      initialPopulation[i,] <- c(rnorm(N_params)/10, 50, 0) #energy, fitness
+      initialPopulation[i,N_params+2] <- fitness(parameters = head(initialPopulation[i,], -2), equat = equation)
     }
+    
+    ########################################
+    population <- initialPopulation
+    
+    if (use_GA){
+      for (i in 1:1000) {
+        population <- MEETING(population, N_params)
+        population <- BREEDING(population, N_params)
+        population <- ELIMINATION(population, N_params)
+      }
+    }
+    
+    print(population)
+    paramFunct <- head(population[1,], -2)
+    
     ########################################
 
     ## Optim with optim(BFGS)
