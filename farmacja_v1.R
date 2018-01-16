@@ -145,9 +145,6 @@ MEETING <- function(population, n_params) {
     object1 = population[indexes[1],]
     object2 = population[indexes[2],]
     population = population[-c(indexes[1], indexes[2]),]
-    print(object1)
-    print(object2)
-    print(nrow(population))
     if (object1[fitnessIndex] < object2[fitnessIndex]) {
       
       if (object1[energyIndex] < ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
