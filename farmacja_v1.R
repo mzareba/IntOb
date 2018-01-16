@@ -137,25 +137,45 @@ tRes1 <- function(matrix, parameters, equat) {
 }
 
 MEETING <- function(population, n_params) {
-  i<-1
-  while (nrow(population)>2 & i<=nrow(population)) {
-    indexes <- sample(nrow(population),2)
-    if (population[indexes[1], n_params+2] < population[indexes[2], n_params+2]) {
-      population[indexes[1], n_params+1] = population[indexes[1], n_params+1] + ENERGY_EXCHANGE
-      population[indexes[2], n_params+1] = population[indexes[2], n_params+1] - ENERGY_EXCHANGE
-      if (population[indexes[2], n_params+1] <= 0) {
-        population <- population[-i,]
+  fitnessIndex = n_params + 2
+  energyIndex = n_params + 1
+  out = matrix(ncol = n_params + 2, nrow = 0)
+  while (nrow(population) >= 2) {
+    indexes = sample(1:nrow(population), 2)
+    object1 = population[indexes[1],]
+    object2 = population[indexes[2],]
+    population = population[-c(indexes[1], indexes[2]),]
+    print(object1)
+    print(object2)
+    print(nrow(population))
+    if (object1[fitnessIndex] < object2[fitnessIndex]) {
+      
+      if (object1[energyIndex] < ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
+        object2[energyIndex] = object2[energyIndex] + object1[energyIndex]
+        out = rbind(out, object2)
+      } else {
+        object2[energyIndex] = object2[energyIndex] + ENERGY_EXCHANGE
+        object1[energyIndex] = object1[energyIndex] - ENERGY_EXCHANGE
+        out = rbind(out, object1, object2)
       }
-    } else if (population[indexes[1], n_params+2] > population[indexes[2], n_params+2]) {
-      population[indexes[2], n_params+1] = population[indexes[2], n_params+1] + ENERGY_EXCHANGE
-      population[indexes[1], n_params+1] = population[indexes[1], n_params+1] - ENERGY_EXCHANGE
-      if (population[indexes[1], n_params+1] <= 0) {
-        population <- population[-i,]
+      
+    } else { #if energy is equal we still need to make the exchange
+      if (object2[energyIndex] < ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
+        object1[energyIndex] = object1[energyIndex] + object2[energyIndex]
+        out = rbind(out, object1)
+      } else {
+        object1[energyIndex] = object1[energyIndex] + ENERGY_EXCHANGE
+        object2[energyIndex] = object2[energyIndex] - ENERGY_EXCHANGE
+        out = rbind(out, object1, object2)
       }
     }
-    i <- i+1
+    #if theres one object left and it didnt met any other object out it in out
+    if (is.integer(nrow(population))) {
+      out = rbind(out, population)
+      break()
+    }
   }
-  return(population)
+  return(out)
 }
 
 BREEDING <- function(population, n_params) {
