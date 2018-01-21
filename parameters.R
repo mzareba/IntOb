@@ -6,6 +6,7 @@ ENERGY <- 50
 ENERGY_EXCHANGE <- 5
 ENERGY_BREEDING <- 80
 
+## Probability parameters
 PROBABILITY_BREEDING <- 0.6
 
 ## Optimization parameters
