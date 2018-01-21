@@ -4,33 +4,34 @@ require(stringr)
 library(GA)
 library(foreach)
 
-####################### variables - remove unnecessary ones
-max_loop <- 1 # Define how many sets use to learn, max 10.
-max_supra_loop <- 1
+# ####################### variables - remove unnecessary ones
+# max_loop <- 1 # Define how many sets use to learn, max 10.
+# max_supra_loop <- 1
 
-ENERGY <- 50
-ENERGY_EXCHANGE <- 5
+# ENERGY <- 50
+# ENERGY_EXCHANGE <- 5
 
-## Optimization parameters
-maxit_SANN <- 100
-maxit_optimx <- 5000
-optim_rel_tol = 1e-20
+# ## Optimization parameters
+# maxit_SANN <- 100
+# maxit_optimx <- 5000
+# optim_rel_tol = 1e-20
 
-opti_trace <- TRUE # save drive space if FALSE
+# opti_trace <- TRUE # save drive space if FALSE
 
-## Optimization methods
-use_GA <- TRUE
-maxit_ga <- 10
-minusInfForGaFitness <- -1e16
-plusInfForGaFitness <- 1e4
-maxFitnessToStopGA <- 1e3 # Has to be bigger than PlusInfForGaFitness
+# ## Optimization methods
+# use_GA <- TRUE
+# maxit_ga <- 10
+# minusInfForGaFitness <- -1e16
+# plusInfForGaFitness <- 1e4
+# maxFitnessToStopGA <- 1e3 # Has to be bigger than PlusInfForGaFitness
 
-####################### file names
+# ####################### file names
 
-# fileName <- "equationList.txt"
-fileName <- "equation.txt"
-inputTrain <- "inputTrain.txt"
-inputTest <- "inputTest.txt"
+# # fileName <- "equationList.txt"
+# fileName <- "equation.txt"
+# inputTrain <- "inputTrain.txt"
+# inputTest <- "inputTest.txt"
+source("parameters.R")
 
 ####################### functions
 ## Function used by GA, definiton from source
@@ -176,10 +177,59 @@ MEETING <- function(population, n_params) {
 }
 
 BREEDING <- function(population, n_params) {
+  fitnessIndex = n_params + 2
+  energyIndex = n_params + 1
+  parents_population = matrix(ncol = n_params + 2, nrow = 0)
+  rest_population = matrix(ncol = n_params + 2, nrow = 0)
+  while(nrow(population) > 0) {
+    index = sample(1:nrow(population), 1)
+    parent = population[index,]
+    population = population[-index,,drop=FALSE]
+    if(parent[energyIndex] > ENERGY_BREEDING) {
+      parents_population = rbind(parents_population, parent)
+    } else {
+      rest_population = rbind(rest_population, parent)
+    }
+  }
+
+  iter = 1
+  children = matrix(nrow = 0, ncol = n_params + 2)
+  while(iter < nrow(parents_population)) {
+    index1 = iter
+    index2 = iter + 1
+    iter = iter + 2
+    if (runif(1) > PROBABILITY_BREEDING)
+      next
+    parents = rbind(parents_population[index,], parents_population[index2,])
+    child <- matrix(as.double(NA), nrow = 1, ncol = n_params + 2)
+    a = 0.1
+    for(i in 1:n_params) {
+      x <- sort(parents[,i])
+      xl <- x[1] - a*(x[2]-x[1])
+      xu <- x[2] + a*(x[2]-x[1])
+      child[,i] <- runif(1, xl, xu) 
+    }
+    energy_parent1 = as.integer(parents_population[index1,energyIndex]/2)
+    parents_population[index1, energyIndex] = parents_population[index1, energyIndex] - energy_parent1
+    energy_parent2 = as.integer(parents_population[index2,energyIndex]/2)
+    parents_population[index2, energyIndex] = parents_population[index2, energyIndex] - energy_parent1
+    child[1,energyIndex] = energy_parent1 + energy_parent2
+    children = rbind(children, child)
+  }
+
+  population = rbind(rest_population, parents_population, children)
+  population = RECALCULATE_FITNESS(population, n_params)
   return(population)
 }
 
 ELIMINATION <- function(population, n_params) {
+  return(population)
+}
+
+RECALCULATE_FITNESS <- function(population, n_params) {
+  for (i in 1:nrow(population)) {
+    population[i,n_params+2] <- fitness(parameters = head(population[i,], -2), equat = equation)
+  }
   return(population)
 }
 
