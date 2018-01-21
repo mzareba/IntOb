@@ -145,9 +145,9 @@ MEETING <- function(population, n_params) {
     object1 = population[indexes[1],]
     object2 = population[indexes[2],]
     population = population[-c(indexes[1], indexes[2]),]
-    if (object1[fitnessIndex] < object2[fitnessIndex]) {
+    if (object1[fitnessIndex] > object2[fitnessIndex]) {
       
-      if (object1[energyIndex] < ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
+      if (object1[energyIndex] <= ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
         object2[energyIndex] = object2[energyIndex] + object1[energyIndex]
         out = rbind(out, object2)
       } else {
@@ -157,7 +157,7 @@ MEETING <- function(population, n_params) {
       }
       
     } else { #if energy is equal we still need to make the exchange
-      if (object2[energyIndex] < ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
+      if (object2[energyIndex] <= ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
         object1[energyIndex] = object1[energyIndex] + object2[energyIndex]
         out = rbind(out, object1)
       } else {
@@ -325,7 +325,7 @@ for (lk_supra_loop in 1: max_supra_loop) {
     initialPopulation <- matrix(nrow = N_ROWS, ncol = N_params + 2)
     
     for (i in 1:N_ROWS) {
-      initialPopulation[i,] <- c(rnorm(N_params)/10, 50, 0) #energy, fitness
+      initialPopulation[i,] <- c(rnorm(N_params), 50, 0) #energy, fitness
       initialPopulation[i,N_params+2] <- fitness(parameters = head(initialPopulation[i,], -2), equat = equation)
     }
     
