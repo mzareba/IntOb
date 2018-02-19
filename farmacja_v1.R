@@ -4,40 +4,11 @@ require(stringr)
 library(GA)
 library(foreach)
 
-# ####################### variables - remove unnecessary ones
-# max_loop <- 1 # Define how many sets use to learn, max 10.
-# max_supra_loop <- 1
-
-# ENERGY <- 50
-# ENERGY_EXCHANGE <- 5
-
-# ## Optimization parameters
-# maxit_SANN <- 100
-# maxit_optimx <- 5000
-# optim_rel_tol = 1e-20
-
-# opti_trace <- TRUE # save drive space if FALSE
-
-# ## Optimization methods
-# use_GA <- TRUE
-# maxit_ga <- 10
-# minusInfForGaFitness <- -1e16
-# plusInfForGaFitness <- 1e4
-# maxFitnessToStopGA <- 1e3 # Has to be bigger than PlusInfForGaFitness
-
-# ####################### file names
-
-# # fileName <- "equationList.txt"
-# fileName <- "equation.txt"
-# inputTrain <- "inputTrain.txt"
-# inputTest <- "inputTest.txt"
-source("parameters.R")
-
 ####################### functions
 ## Function used by GA, definiton from source
 
 SELECTION <- function(object, k = 3, ...) {
-# (unbiased) Tournament selection 
+# (unbiased) Tournament selection
   sel <- rep(NA, object@popSize)
   for(i in 1:object@popSize)
      { s <- sample(1:object@popSize, size = k)
@@ -59,7 +30,7 @@ CROSSOVER <- function(object, parents, ...) {
      { x <- sort(parents[,i])
        xl <- max(x[1] - a*(x[2]-x[1]), object@min[i])
        xu <- min(x[2] + a*(x[2]-x[1]), object@max[i])
-       children[,i] <- runif(2, xl, xu) 
+       children[,i] <- runif(2, xl, xu)
      }
   out <- list(children = children, fitness = rep(NA,2))
   return(out)
@@ -86,11 +57,11 @@ RMSE1 <- function(matrix, parameters, equat) {
     assign(paste("In", i, sep = ""), as.double(matrix[, i]))
     out_RMSE <- as.double(matrix[, dim(matrix)[2]])
   }, TRUE)
-  
+
   try (y <- eval(parse(text = equat)), TRUE)
   try (res <- sqrt(mean((y - out_RMSE) ^ 2)), TRUE)
   return (res)
-  
+
 }
 
 ##RMSE function
@@ -130,7 +101,7 @@ tRes1 <- function(matrix, parameters, equat) {
     assign(paste("In", i, sep = ""), as.double(matrix[, i]))
     observed <- as.double(matrix[, dim(matrix)[2]])
   }, TRUE)
-  
+
   try (predicted <- eval(parse(text = equat)), TRUE)
   try (res <- cbind(observed, predicted), TRUE)
   colnames(res) <- c("Observed", "Predicted")
@@ -147,7 +118,7 @@ MEETING <- function(population, n_params) {
     object2 = population[indexes[2],]
     population = population[-c(indexes[1], indexes[2]),]
     if (object1[fitnessIndex] > object2[fitnessIndex]) {
-      
+
       if (object1[energyIndex] <= ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
         object2[energyIndex] = object2[energyIndex] + object1[energyIndex]
         out = rbind(out, object2)
@@ -156,7 +127,7 @@ MEETING <- function(population, n_params) {
         object1[energyIndex] = object1[energyIndex] - ENERGY_EXCHANGE
         out = rbind(out, object1, object2)
       }
-      
+
     } else { #if energy is equal we still need to make the exchange
       if (object2[energyIndex] <= ENERGY_EXCHANGE) { #not enough energy 0 < energy < ENERGY_EXCHANGE, take what's left and remove
         object1[energyIndex] = object1[energyIndex] + object2[energyIndex]
@@ -207,7 +178,7 @@ BREEDING <- function(population, n_params) {
       x <- sort(parents[,i])
       xl <- x[1] - a*(x[2]-x[1])
       xu <- x[2] + a*(x[2]-x[1])
-      child[,i] <- runif(1, xl, xu) 
+      child[,i] <- runif(1, xl, xu)
     }
     energy_parent1 = as.integer(parents_population[index1,energyIndex]/2)
     parents_population[index1, energyIndex] = parents_population[index1, energyIndex] - energy_parent1
@@ -219,10 +190,6 @@ BREEDING <- function(population, n_params) {
 
   population = rbind(rest_population, parents_population, children)
   population = RECALCULATE_FITNESS(population, n_params)
-  return(population)
-}
-
-ELIMINATION <- function(population, n_params) {
   return(population)
 }
 
@@ -342,14 +309,14 @@ for (lk_supra_loop in 1: max_supra_loop) {
 
     matryca <- read.csv(plik,header=FALSE,sep="\t", colClasses="numeric")
     matryca1 <- read.csv(plik1,header=FALSE,sep="\t", colClasses="numeric")
-        
+
     for(i in 1:(dim(matryca)[2]-1)) {
         assign(paste("In", i, sep=""), as.double(matryca[,i]))
         out<-as.double(matryca[,dim(matryca)[2]])
-    }                         
+    }
     #paramFunct <-vector(length=N_params, "numeric")
     paramFunct<-rnorm(N_params)/10
-    print("paramFunct")    
+    print("paramFunct")
     print(paramFunct)
     best_error<-100000000
     cat("Iteration no = ",lk_loop,"\n")
@@ -360,28 +327,28 @@ for (lk_supra_loop in 1: max_supra_loop) {
 
     print("Check init values")
 
-    preliminary_output<-funct(paramFunct, equation)                      
-    cat("Preliminary output = ",preliminary_output,"\n")   
-              
+    preliminary_output<-funct(paramFunct, equation)
+    cat("Preliminary output = ",preliminary_output,"\n")
+
     for_domain <- matrix(data=NA,nrow=length(paramFunct),ncol=2)
 
     for(i in 1:length(paramFunct)) {
       for_domain[i,1]<--100*max(abs(paramFunct))
       for_domain[i,2]<-100*max(abs(paramFunct))
     }
-    
+
     N_ROWS <- 50
-    
+
     initialPopulation <- matrix(nrow = N_ROWS, ncol = N_params + 2)
-    
+
     for (i in 1:N_ROWS) {
       initialPopulation[i,] <- c(rnorm(N_params), 50, 0) #energy, fitness
       initialPopulation[i,N_params+2] <- fitness(parameters = head(initialPopulation[i,], -2), equat = equation)
     }
-    
+
     ########################################
     population <- initialPopulation
-    
+
     if (use_GA){
       for (i in 1:1000) {
         population <- MEETING(population, N_params)
@@ -389,10 +356,10 @@ for (lk_supra_loop in 1: max_supra_loop) {
         population <- ELIMINATION(population, N_params)
       }
     }
-    
+
     print(population)
     paramFunct <- head(population[1,], -2)
-    
+
     ########################################
 
     ## Optim with optim(BFGS)
@@ -404,7 +371,7 @@ for (lk_supra_loop in 1: max_supra_loop) {
     try(fit1 <- optim(
         paramFunct,
         equat=equation,
-        fn=funct,    
+        fn=funct,
         method="BFGS",
         control=list(trace=opti_trace,maxit=maxit_optimx)
     ),TRUE)
@@ -446,7 +413,7 @@ for (lk_supra_loop in 1: max_supra_loop) {
 
     print("-------------------------------------")
 
-  }         
+  }
   ##End of optimization function
   ##----------------------------------------------------
 
@@ -474,7 +441,7 @@ for (lk_supra_loop in 1: max_supra_loop) {
     best_all_params<-all_params
     best_RMSE_val<-RMSE_val
     best_RMSE_ind<-RMSE_ind
-    best_RMSE_total<-RMSE_total  
+    best_RMSE_total<-RMSE_total
   }
 }
 #end of supra_optimization_loop
@@ -484,7 +451,7 @@ for (lk_supra_loop in 1: max_supra_loop) {
     RMSE_ind<-best_RMSE_ind
     RMSE_total<-best_RMSE_total
 
-    
+
 print(" ")
 print("OVERALL SUMMARY")
 print(" ")
@@ -529,7 +496,7 @@ cat("Mean_RMSE: ", RMSE_total, "\n", sep="")
 
 ##Make Observed and Predicted table
 obsPredFileName<-"Results.txt"
-cat(paste("Observed\tPredicted\n", sep=""), file=obsPredFileName, append=FALSE)  
+cat(paste("Observed\tPredicted\n", sep=""), file=obsPredFileName, append=FALSE)
 
 for(i in 1:max_loop) {
   fileName <- paste(skel_plik1,i,".txt",sep="")
