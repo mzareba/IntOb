@@ -4,6 +4,8 @@ require(stringr)
 library(GA)
 library(foreach)
 
+source("parameters.R")
+
 ####################### functions
 ## Function used by GA, definiton from source
 
@@ -349,16 +351,36 @@ for (lk_supra_loop in 1: max_supra_loop) {
     ########################################
     population <- initialPopulation
 
-    if (use_GA){
+    if (use_emas){
       for (i in 1:1000) {
         population <- MEETING(population, N_params)
         population <- BREEDING(population, N_params)
-        population <- ELIMINATION(population, N_params)
       }
-    }
 
-    print(population)
-    paramFunct <- head(population[1,], -2)
+      print(population)
+      paramFunct <- head(population[1,], -2)
+    } else {
+      require(GA)
+
+      print("Running GA")
+      fit0 <- ga( suggestions = paramFunct,
+                  fitness     = function(x) funct(x, equation),
+                  type        = "real-valued",
+                  maxiter     = maxit_ga,
+                  maxFitness  = maxFitnessToStopGA,
+                  selection   = SELECTION,
+                  crossover   = CROSSOVER,
+                  mutation    = MUTATION,
+                  min         = for_domain[,1],
+                  max         = for_domain[,2]
+      )
+
+      paramFunct<-fit0@solution
+
+      print("FINAL RESULTS GA")
+      print(paramFunct)
+
+    }
 
     ########################################
 

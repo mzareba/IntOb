@@ -17,7 +17,7 @@ optim_rel_tol = 1e-20
 opti_trace <- TRUE # save drive space if FALSE
 
 ## Optimization methods
-use_GA <- TRUE
+use_emas <- TRUE
 maxit_ga <- 10
 minusInfForGaFitness <- -1e16
 plusInfForGaFitness <- 1e4
